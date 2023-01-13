@@ -14,6 +14,7 @@ class Transformer:
     class SupportType(IntEnum):
         pdf2word = 0
         word2pdf = 1
+        pdf2img = 2
 
     def __init__(self, loop: asyncio.base_events.BaseEventLoop = None) -> None:
         self.__loop = loop or asyncio.get_event_loop()
@@ -182,7 +183,7 @@ class Transformer:
         pdf_file = pdf_file if type(pdf_file) is Path else Path(pdf_file)
         if pdf_file.is_file():
             dest_path = dest_path or pdf_file.parent
-            await self.__pdf2img(pdf_file, dest_path, dpi, format)
+            await self.__pdf2img(pdf_file, dest_path, dpi, alpha, format)
         elif pdf_file.is_dir():
             dest_path = dest_path or pdf_file
             tasks = [
@@ -190,6 +191,7 @@ class Transformer:
                     file,
                     dest_path,
                     dpi,
+                    alpha,
                     format,
                 ))
                 for file in pdf_file.iterdir() if file.suffix == '.pdf'

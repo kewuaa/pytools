@@ -81,7 +81,7 @@ class OCRWidget(ttk.Frame):
         frame7 = ttk.Frame(frame4)
         frame7.configure(height=200, width=200)
         label2 = ttk.Label(frame7)
-        label2.configure(text='concurrency')
+        label2.configure(text='concurrency:')
         label2.pack(padx=23, pady=10, side="left")
         self.concurrency_spinbox = ttk.Spinbox(frame7)
         self.concurrency_spinbox.configure(from_=1, to=4, width=3)

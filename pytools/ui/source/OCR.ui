@@ -227,7 +227,7 @@
                         </layout>
                         <child>
                           <object class="ttk.Label" id="label2">
-                            <property name="text" translatable="yes">concurrency</property>
+                            <property name="text" translatable="yes">concurrency:</property>
                             <layout manager="pack">
                               <property name="padx">23</property>
                               <property name="pady">10</property>

@@ -224,33 +224,29 @@ class PDFWidget(PDF_ui.PDFWidget):
             self._last_dir = directory
             logging.info(f'directory "{directory}" choosed')
 
+    def _schedule_transform(self, file_or_dir: Path) -> None:
+        transform_type = self.type_combobox.current()
+        SupportType = self._transformer.SupportType
+        if transform_type == SupportType.pdf2word:
+            asynctk.create_task(self._transformer.pdf2word(file_or_dir))
+        elif transform_type == SupportType.word2pdf:
+            asynctk.create_task(self._transformer.word2pdf(file_or_dir))
+        elif transform_type == SupportType.pdf2img:
+            asynctk.create_task(self._transformer.pdf2img(file_or_dir))
+
     def single_transform(self) -> None:
         file = self.file_path.get()
         if not file:
             logging.warning('no file choosed')
             return
-        file = Path(file)
-        suffix = file.suffix
-        if suffix == '.pdf':
-            asynctk.create_task(self._transformer.pdf2word(file))
-        elif suffix in ('.doc', '.docx'):
-            asynctk.create_task(self._transformer.word2pdf(file))
-        else:
-            msg = 'unexpected file type'
-            logging.error(msg)
-            raise RuntimeError(msg)
+        self._schedule_transform(file)
 
     def batch_transform(self) -> None:
         directory = self.directory_path.get()
         if not directory:
             logging.warning('no directory choosed')
             return
-        transform_type = self.type_combobox.current()
-        SupportType = self._transformer.SupportType
-        if transform_type == SupportType.pdf2word:
-            asynctk.create_task(self._transformer.pdf2word(directory))
-        elif transform_type == SupportType.word2pdf:
-            asynctk.create_task(self._transformer.word2pdf(directory))
+        self._schedule_transform(directory)
 
 
 class MainApp(main_ui.MainApp):

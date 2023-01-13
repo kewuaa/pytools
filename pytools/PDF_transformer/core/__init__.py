@@ -88,23 +88,22 @@ class Transformer:
         dest_path = dest_path / (file.stem + '.pdf')
         doc = await aiofile.AWrapper(word.Documents.Open)(str(file))
         doc = aiofile.AIOWrapper(doc)
-        await doc.SaveAs(str(dest_path), FileFormat=17)
-        await doc.Close(0)
+        try:
+            await doc.SaveAs(str(dest_path), FileFormat=17)
+        except Exception as e:
+            logging.error(str(e))
+            raise e
+        finally:
+            await doc.Close(0)
 
     async def word2pdf(
         self,
         word_file: str or Path,
         dest_path: str or Path = None,
     ) -> None:
+        word = await aiofile.AWrapper(client.Dispatch)('Word.Application')
+        word = aiofile.AIOWrapper(word)
         try:
-            word = await aiofile.AWrapper(client.Dispatch('Word.Application'))
-        except Exception as e:
-            msg = 'your computer seems not have Word Application -> ' + \
-                str(e)
-            logging.error(msg)
-            raise RuntimeError(msg)
-        else:
-            word = aiofile.AIOWrapper(word)
             word_file = Path(word_file) if type(word_file) is not Path \
                 else word_file
             if word_file.is_dir():
@@ -139,10 +138,70 @@ class Transformer:
         finally:
             await word.Quit()
 
-    async def __img2pdf(
-        self,
-        img_file: str or Path,
-        dest_path: str or Path,
-    ) -> None:
+    async def __img2pdf(self, img_file: Path, dest_path: Path) -> None:
         pdf = await aiofile.AWrapper(fitz.open)()
         pdf = aiofile.AIOWrapper(pdf)
+
+    async def __pdf2img(
+        self,
+        pdf_file: Path,
+        dest_path: Path,
+        dpi: int,
+        alpha: bool,
+        format: str,
+    ):
+        async def save_page(index: int):
+            pm = await aiofile.AWrapper(pdf[index].get_pixmap)(dpi=dpi, alpha=alpha)
+            # pm = pdf[index].get_pixmap(dpi=dpi)
+            path = dest_path / f'{index + 1}.{format}'
+            await aiofile.AWrapper(pm.save)(str(path))
+        pdf = await aiofile.AWrapper(fitz.open)(str(pdf_file))
+        apdf = aiofile.AIOWrapper(pdf)
+        try:
+            page_num = pdf.page_count
+            tasks = [
+                self.__loop.create_task(save_page(i))
+                for i in range(page_num)
+            ]
+            for task in tasks:
+                await task
+        except Exception as e:
+            logging.error(str(e))
+            raise e
+        finally:
+            await apdf.close()
+
+    async def pdf2img(
+        self,
+        pdf_file: str or Path,
+        dest_path: str or Path = None,
+        dpi: int = 300,
+        alpha: bool = False,
+        format: str = 'png',
+    ):
+        pdf_file = pdf_file if type(pdf_file) is Path else Path(pdf_file)
+        if pdf_file.is_file():
+            dest_path = dest_path or pdf_file.parent
+            await self.__pdf2img(pdf_file, dest_path, dpi, format)
+        elif pdf_file.is_dir():
+            dest_path = dest_path or pdf_file
+            tasks = [
+                self.__loop.create_task(self.__pdf2img(
+                    file,
+                    dest_path,
+                    dpi,
+                    format,
+                ))
+                for file in pdf_file.iterdir() if file.suffix == '.pdf'
+            ]
+            if not tasks:
+                msg = f'no pdf file found in {pdf_file}'
+                logging.error(msg)
+                raise RuntimeError(msg)
+            for task in tasks:
+                await task
+        else:
+            msg = f'"{pdf_file}" not a file or directory'
+            logging.error(msg)
+            raise RuntimeError(msg)
+        logging.info(f'successfully transformed to {dest_path}')

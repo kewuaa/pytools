@@ -105,7 +105,9 @@ class OCRWidget(OCR_ui.OCRWidget):
                 else logging.warning(str(fut.exception()))
             )
         elif isinstance(img, Image.Image):
-            img.show()
+            async def show(img: Image.Image):
+                await aiofile.AWrapper(img.show)()
+            asynctk.create_task(show(img))
         else:
             logging.info('no image file choosed and no image in clip board')
 
@@ -226,12 +228,29 @@ class PDFWidget(PDF_ui.PDFWidget):
         file = self.file_path.get()
         if not file:
             logging.warning('no file choosed')
+            return
         file = Path(file)
         suffix = file.suffix
         if suffix == '.pdf':
             asynctk.create_task(self._transformer.pdf2word(file))
         elif suffix in ('.doc', '.docx'):
             asynctk.create_task(self._transformer.word2pdf(file))
+        else:
+            msg = 'unexpected file type'
+            logging.error(msg)
+            raise RuntimeError(msg)
+
+    def batch_transform(self) -> None:
+        directory = self.directory_path.get()
+        if not directory:
+            logging.warning('no directory choosed')
+            return
+        transform_type = self.type_combobox.current()
+        SupportType = self._transformer.SupportType
+        if transform_type == SupportType.pdf2word:
+            asynctk.create_task(self._transformer.pdf2word(directory))
+        elif transform_type == SupportType.word2pdf:
+            asynctk.create_task(self._transformer.word2pdf(directory))
 
 
 class MainApp(main_ui.MainApp):

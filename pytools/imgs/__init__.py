@@ -11,7 +11,7 @@ async def __set(name: str, widget: tk.Widget, *widgets) -> None:
     img = await aget(name)
     # widget.update()
     size = widget.winfo_width(), widget.winfo_height()
-    resized_img = img.resize(size)
+    resized_img = img.resize(size, Image.ANTIALIAS)
     img = ImageTk.PhotoImage(resized_img)
     widget.img = img
     widget.configure(image=img)

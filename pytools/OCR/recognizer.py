@@ -36,7 +36,7 @@ class Recognizer:
         url_encoded = quote(b64str)
         return url_encoded
 
-    async def __load_api_keys(self) -> None:
+    async def __load_api_keys(self) -> tuple:
         home_path = Path.home()
         config_path = home_path / '.config/baidu'
         config_path.mkdir(exist_ok=True)
@@ -55,7 +55,7 @@ class Recognizer:
             raise RuntimeError(msg)
         return config['API_KEY'], config['SECRET_KEY']
 
-    async def __init_access_token(self) -> None:
+    async def __init_access_token(self) -> str:
         url = 'https://aip.baidubce.com/oauth/2.0/token'
         api_key, secret_key = await self.__keys
         params = {
@@ -125,20 +125,24 @@ class Recognizer:
     async def recognize(self, path: str or Path, **params) -> str or dict:
         if not path:
             return await self.__recognize('', **params)
-        path = Path(path) if type(path) is not Path else path
+        path = Path(path)
         if path.is_file():
             result = await self.__recognize(path)
         elif path.is_dir():
-            files = tuple(path.iterdir())
+            files = tuple(
+                file
+                for file in path.iterdir()
+                if file.suffix in self.support_type
+            )
+            if not files:
+                msg = f'no supported file found in {path}\n'\
+                    f'{", ".join(self.support_type)} are supported'
+                logging.error(msg)
+                raise RuntimeError(msg)
             cores = [
                 self.__recognize(file)
                 for file in files
-                if file.suffix in self.support_type
             ]
-            if not cores:
-                msg = f'no supported file found in {path}'
-                logging.error(msg)
-                raise RuntimeError(msg)
             concurrency = self.__concurrency
             result = {}
             for i in range(0, len(cores), concurrency):

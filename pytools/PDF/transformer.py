@@ -9,6 +9,7 @@ import fitz
 
 from pytools.lib import aiofile
 from pytools import logging
+imopen = aiofile.AWrapper(Image.open)
 
 
 class Transformer:
@@ -63,7 +64,7 @@ class Transformer:
                 if file.suffix == '.pdf'
             ]
             if not tasks:
-                msg = f'no pdf file found in {pdf_file}'
+                msg = f'no pdf file founded in {pdf_file}'
                 logging.error(msg)
                 raise RuntimeError(msg)
             for task in tasks:
@@ -121,7 +122,7 @@ class Transformer:
                     if file.suffix in ('.doc', '.docx')
                 ]
                 if not tasks:
-                    msg = f'no word file found in {word_file}'
+                    msg = f'no word file founded in {word_file}'
                     logging.error(msg)
                     raise RuntimeError(msg)
                 for task in tasks:
@@ -142,7 +143,6 @@ class Transformer:
             await word.Quit()
 
     async def __img2pdf(self, img_file: Path, dest_path: Path) -> None:
-        imopen = aiofile.AWrapper(Image.open)
         img = await imopen(img_file)
         if img_file.suffix == '.png':
             bg = Image.new('RGB', img.size, (255, 255, 255))
@@ -151,35 +151,6 @@ class Transformer:
         await aiofile.AWrapper(img.save)(
             dest_path / f'{img_file.stem}.pdf',
         )
-        # files = tuple(
-        #     file
-        #     for file in img_file.iterdir()
-        #     if file.suffix in self.support_img_type
-        # )
-        # if not files:
-        #     msg = f'no supported file found in {img_file}\n' \
-        #         f'{", ".join(self.support_img_type)} are supported'
-        #     logging.error(msg)
-        #     raise RuntimeError(msg)
-        # tasks = [
-        #     imopen(file)
-        #     for file in files
-        # ]
-        # if len(tasks) == 1:
-        #     logging.warning(
-        #         'only one supported image founded, unable to merge',
-        #     )
-        #     await aiofile.AWrapper((await tasks[0]).save)(
-        #         dest_path / f'{files[0].stem}.pdf',
-        #     )
-        # else:
-        #     imgs = [await task for task in tasks]
-        #     save_path = dest_path / f'{img_file.name}.pdf'
-        #     await aiofile.AWrapper(imgs[0].save)(
-        #         save_path,
-        #         save_all=True,
-        #         append_images=imgs[1:],
-        #     )
 
     async def img2pdf(
         self,
@@ -198,7 +169,7 @@ class Transformer:
                 if file.suffix in self.support_img_type
             ]
             if not tasks:
-                msg = f'no supported file found in {img_file}\n' \
+                msg = f'no supported file founded in {img_file}\n' \
                     f'{", ".join(self.support_img_type)} are supported'
                 logging.error(msg)
                 raise RuntimeError(msg)
@@ -209,6 +180,42 @@ class Transformer:
             logging.error(msg)
             raise RuntimeError(msg)
         logging.info(f'successfully transformed to {dest_path}')
+
+    # TODO: to improve it to make it suitable for png image
+    # and images have different size
+    async def __imgs2pdf(
+        self,
+        img_dir: Path,
+        dest_path: Path,
+        format: str,
+    ) -> None:
+        files = tuple(
+            file
+            for file in img_dir.iterdir()
+            if file.suffix == '.' + format
+        )
+        if not files:
+            msg = f'no {format} file founded in {img_dir}'
+            logging.error(msg)
+            raise RuntimeError(msg)
+        tasks = [
+            imopen(file)
+            for file in files
+        ]
+        if len(tasks) == 1:
+            logging.warning(
+                f'only one {format} image founded, unable to merge, '
+                'transformed it to pdf file'
+            )
+            await self.__img2pdf(files[0], dest_path)
+        else:
+            imgs = [await task for task in tasks]
+            save_path = dest_path / f'{img_dir.name}.pdf'
+            await aiofile.AWrapper(imgs[0].save)(
+                save_path,
+                save_all=True,
+                append_images=imgs[1:],
+            )
 
     async def __pdf2img(
         self,
@@ -267,7 +274,7 @@ class Transformer:
                 for file in pdf_file.iterdir() if file.suffix == '.pdf'
             ]
             if not tasks:
-                msg = f'no pdf file found in {pdf_file}'
+                msg = f'no pdf file founded in {pdf_file}'
                 logging.error(msg)
                 raise RuntimeError(msg)
             for task in tasks:

@@ -2,8 +2,8 @@ from pathlib import Path
 from PIL import ImageTk, Image
 import tkinter as tk
 
-from ..libs.aiofile import AWrapper
-from ..libs import asynctk
+from ..lib.aiofile import AWrapper
+from ..lib import asynctk
 __cwd = Path(__file__).parent
 
 

@@ -10,13 +10,13 @@ from PIL import Image
 from .ui import main_ui
 from .ui import OCR_ui
 from .ui import PDF_ui
-from .libs import asynctk
-from .libs import aiofile
-from .libs import clipboard
+from .lib import asynctk
+from .lib import aiofile
+from .lib import clipboard
 from . import logging
 from .OCR import Recognizer
 from .PDF import Transformer
-from pytools import imgs
+from pytools import icon
 _cwd = Path(__file__).parent
 
 
@@ -31,7 +31,7 @@ class OCRWidget(OCR_ui.OCRWidget):
             str(Path.cwd() / name),
             name,
         )
-        imgs.set(
+        icon.set(
             'run',
             self.single_recognize_button,
             self.batch_recognize_button,
@@ -89,7 +89,7 @@ class OCRWidget(OCR_ui.OCRWidget):
     def view_image(self) -> None:
         img = self._get_img()
         if type(img) is str:
-            asynctk.create_task(imgs.load(img)).add_done_callback(
+            asynctk.create_task(img.load(img)).add_done_callback(
                 lambda fut: fut.result().show()
                 if fut.exception() is None
                 else logging.warning(str(fut.exception()))
@@ -172,7 +172,7 @@ class PDFWidget(PDF_ui.PDFWidget):
         super().__init__(master=master)
         self._last_dir = ''
         self._init_pdf_transformer()
-        imgs.set(
+        icon.set(
             'run',
             self.single_transform_button,
             self.batch_transform_button,
@@ -252,7 +252,7 @@ class MainApp(main_ui.MainApp):
         super().__init__()
         self.ocr_frame = None
         self.pdf_frame = None
-        imgs.set('start', self.start_label)
+        icon.set('start', self.start_label)
 
         def log(msg: str, color: str = 'blue', delay=3000) -> None:
             self.message_label.configure(text=msg, foreground=color)

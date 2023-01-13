@@ -7,7 +7,7 @@ import json
 from aiohttp import ClientSession
 
 from pytools import logging
-from pytools.libs import aiofile
+from pytools.lib import aiofile
 
 
 class Recognizer:

@@ -16,7 +16,7 @@ from .lib import clipboard
 from . import logging
 from .OCR import Recognizer
 from .PDF import Transformer
-from pytools import icon
+from pytools import image
 _cwd = Path(__file__).parent
 
 
@@ -31,7 +31,7 @@ class OCRWidget(OCR_ui.OCRWidget):
             str(Path.cwd() / name),
             name,
         )
-        icon.set(
+        image.set(
             'run',
             self.single_recognize_button,
             self.batch_recognize_button,
@@ -89,7 +89,7 @@ class OCRWidget(OCR_ui.OCRWidget):
     def view_image(self) -> None:
         img = self._get_img()
         if type(img) is str:
-            asynctk.create_task(img.load(img)).add_done_callback(
+            asynctk.create_task(image.load(img)).add_done_callback(
                 lambda fut: fut.result().show()
                 if fut.exception() is None
                 else logging.warning(str(fut.exception()))
@@ -172,7 +172,7 @@ class PDFWidget(PDF_ui.PDFWidget):
         super().__init__(master=master)
         self._last_dir = ''
         self._init_pdf_transformer()
-        icon.set(
+        image.set(
             'run',
             self.single_transform_button,
             self.batch_transform_button,
@@ -252,7 +252,7 @@ class MainApp(main_ui.MainApp):
         super().__init__()
         self.ocr_frame = None
         self.pdf_frame = None
-        icon.set('start', self.start_label)
+        image.set('start', self.start_label)
 
         def log(msg: str, color: str = 'blue', delay=3000) -> None:
             self.message_label.configure(text=msg, foreground=color)

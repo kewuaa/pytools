@@ -3,6 +3,7 @@ from pathlib import Path
 from tkinter import filedialog
 from tkinter import messagebox
 from io import BytesIO
+import tkinter as tk
 import asyncio
 
 from PIL import Image
@@ -253,6 +254,7 @@ class MainApp(main_ui.MainApp):
         self.ocr_frame = None
         self.pdf_frame = None
         image.set('start', self.start_label)
+        self.__load_theme_submenu()
 
         def log(msg: str, color: str = 'blue', delay=3000) -> None:
             self.message_label.configure(text=msg, foreground=color)
@@ -264,6 +266,49 @@ class MainApp(main_ui.MainApp):
         logging.add_warning_logger(partial(log, color='red'))
         logging.add_error_logger(
             lambda msg: messagebox.showerror('error', msg),
+        )
+
+    def __load_theme_submenu(self) -> None:
+        # add theme options
+        style = tk.ttk.Style(self.mainwindow)
+        for style_name in style.theme_names():
+            self.theme_submenu.add_command(
+                label=style_name,
+                command=partial(style.theme_use, style_name),
+            )
+        style.theme_use('xpnative')
+        self.theme_submenu.add('separator')
+
+        # 添加ttkthemes的主题样式
+        def add_additional_styles():
+            def try_init():
+                try:
+                    import ttkthemes
+                except ImportError:
+                    msg = 'ttkthemes is needed, use pip to install it'
+                    logging.info(msg)
+                else:
+                    self.theme_submenu.delete('load more')
+                    self.mainwindow.after(100, init, ttkthemes)
+
+            def init(ttkthemes):
+                logging.info('loading ttkthemes......')
+                style = ttkthemes.ThemedStyle(self.mainwindow)
+                for style_name in ttkthemes.THEMES:
+                    self.theme_submenu.add_command(
+                        label=style_name,
+                        command=partial(style.set_theme, style_name),
+                    )
+                logging.info('ttkthemes loaded')
+
+            asynctk.call_soon(
+                asynctk._callback_loop.run_in_executor,
+                None,
+                try_init,
+            )
+        self.theme_submenu.add_command(
+            label='load more',
+            command=add_additional_styles,
         )
 
     def _clear_main_frame(self) -> None:

@@ -44,6 +44,16 @@ class MainApp:
         self.message_label = ttk.Label(self.toplevel)
         self.message_label.configure(relief="groove")
         self.message_label.pack(expand="true", fill="both", side="top")
+        menu1 = tk.Menu(self.toplevel)
+        submenu1 = tk.Menu(menu1, tearoff="false")
+        menu1.add(tk.CASCADE, menu=submenu1, label='setting')
+        self.theme_submenu = tk.Menu(submenu1, tearoff="false")
+        submenu1.add(
+            "command",
+            command=self.popup_option_panel,
+            label='options')
+        submenu1.add(tk.CASCADE, menu=self.theme_submenu, label='switch theme')
+        self.toplevel.configure(menu=menu1)
 
         # Main widget
         self.mainwindow = self.toplevel
@@ -55,6 +65,9 @@ class MainApp:
         pass
 
     def switch_to_PDF_frame(self):
+        pass
+
+    def popup_option_panel(self):
         pass
 
 

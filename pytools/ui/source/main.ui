@@ -95,5 +95,31 @@
         </layout>
       </object>
     </child>
+    <child>
+      <object class="pygubu.builder.widgets.toplevelmenu" id="toplevelmenu1">
+        <child>
+          <object class="tk.Menu" id="menu1">
+            <child>
+              <object class="tk.Menuitem.Submenu" id="submenu1">
+                <property name="label" translatable="yes">setting</property>
+                <property name="tearoff">false</property>
+                <child>
+                  <object class="tk.Menuitem.Command" id="command2">
+                    <property name="command" type="command" cbtype="simple">popup_option_panel</property>
+                    <property name="label" translatable="yes">options</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="tk.Menuitem.Submenu" id="theme_submenu" named="True">
+                    <property name="label" translatable="yes">switch theme</property>
+                    <property name="tearoff">false</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
   </object>
 </interface>

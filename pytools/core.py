@@ -8,6 +8,7 @@ import asyncio
 
 from PIL import Image
 
+from pytools import image
 from .ui import main_ui
 from .ui import OCR_ui
 from .ui import PDF_ui
@@ -17,7 +18,6 @@ from .lib.alib import aiofile
 from . import logging
 from .OCR import Recognizer
 from .PDF import Transformer
-from pytools import image
 _cwd = Path(__file__).parent
 
 
@@ -281,35 +281,34 @@ class MainApp(main_ui.MainApp):
         self.theme_submenu.add('separator')
 
         # 添加ttkthemes的主题样式
-        def add_additional_styles():
-            def try_init():
-                try:
-                    import ttkthemes
-                except ImportError:
-                    msg = 'ttkthemes is needed, use pip to install it'
-                    logging.info(msg)
-                else:
-                    self.theme_submenu.delete('load more')
-                    self.mainwindow.after(100, init, ttkthemes)
-
-            def init(ttkthemes):
-                logging.info('loading ttkthemes......')
-                style = ttkthemes.ThemedStyle(self.mainwindow)
-                for style_name in ttkthemes.THEMES:
+        def add_additional_themes():
+            def load(ttkthemes):
+                def set_theme(theme):
                     self.theme_submenu.add_command(
-                        label=style_name,
-                        command=partial(style.set_theme, style_name),
+                        label=theme,
+                        command=partial(theme_style.set_theme, theme)
                     )
-                logging.info('ttkthemes loaded')
+                logging.info('loading ttkthemes......')
+                theme_style = ttkthemes.ThemedStyle(self.mainwindow)
+                for i, theme in enumerate(ttkthemes.THEMES):
+                    self.mainwindow.after(i * 100, set_theme, theme)
+                self.mainwindow.after(
+                    (i + 1) * 100,
+                    logging.info,
+                    'ttkthemes loaded',
+                )
 
-            asynctk.call_soon(
-                asynctk._callback_loop.run_in_executor,
-                None,
-                try_init,
-            )
+            try:
+                import ttkthemes
+            except ImportError:
+                msg = 'ttkthemes is needed, use pip to install it'
+                logging.info(msg)
+            else:
+                self.theme_submenu.delete('load more')
+                load(ttkthemes)
         self.theme_submenu.add_command(
             label='load more',
-            command=add_additional_styles,
+            command=add_additional_themes,
         )
 
     def _clear_main_frame(self) -> None:

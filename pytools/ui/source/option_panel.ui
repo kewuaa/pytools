@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface version="1.3">
+  <object class="pygubu.builder.widgets.dialog" id="dialog1">
+    <property name="height">100</property>
+    <property name="width">200</property>
+  </object>
+</interface>

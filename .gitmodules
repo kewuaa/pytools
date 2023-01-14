@@ -1,0 +1,3 @@
+[submodule "pytools/lib/alib"]
+	path = pytools/lib/alib
+	url = git@github.com:kewuaa/async_lib.git

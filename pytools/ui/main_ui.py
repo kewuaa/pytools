@@ -2,7 +2,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
-from ..lib.asynctk import AsyncTk
+from ..lib.alib.asynctk import AsyncTk
 
 
 class MainApp:

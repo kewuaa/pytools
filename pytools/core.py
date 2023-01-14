@@ -11,9 +11,9 @@ from PIL import Image
 from .ui import main_ui
 from .ui import OCR_ui
 from .ui import PDF_ui
-from .lib import asynctk
-from .lib import aiofile
 from .lib import clipboard
+from .lib.alib import asynctk
+from .lib.alib import aiofile
 from . import logging
 from .OCR import Recognizer
 from .PDF import Transformer
@@ -251,6 +251,7 @@ class PDFWidget(PDF_ui.PDFWidget):
 class MainApp(main_ui.MainApp):
     def __init__(self) -> None:
         super().__init__()
+        self.mainwindow.title('pytools')
         self.ocr_frame = None
         self.pdf_frame = None
         image.set('start', self.start_label)

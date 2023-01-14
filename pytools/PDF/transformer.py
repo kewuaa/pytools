@@ -234,7 +234,6 @@ class Transformer:
             await aiofile.AWrapper(pm.save)(str(path))
         pdf = await aiofile.AWrapper(fitz.open)(str(pdf_file))
         try:
-            dest_path = dest_path / pdf_file.stem
             await aiofile.AWrapper(dest_path.mkdir)(exist_ok=True)
             page_num = pdf.page_count
             tasks = [
@@ -260,6 +259,7 @@ class Transformer:
         pdf_file = Path(pdf_file)
         if pdf_file.is_file():
             dest_path = Path(dest_path) if dest_path else pdf_file.parent
+            dest_path = dest_path / pdf_file.stem
             await self.__pdf2img(pdf_file, dest_path, dpi, alpha, format)
         elif pdf_file.is_dir():
             dest_path = Path(dest_path) if dest_path else pdf_file

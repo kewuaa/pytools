@@ -150,7 +150,7 @@
                     <layout manager="grid">
                       <property name="column">2</property>
                       <property name="row">2</property>
-                      <property name="sticky">s</property>
+                      <property name="sticky">sw</property>
                     </layout>
                   </object>
                 </child>

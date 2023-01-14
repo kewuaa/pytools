@@ -15,9 +15,10 @@ from .ui import PDF_ui
 from .lib import clipboard
 from .lib.alib import asynctk
 from .lib.alib import aiofile
-from . import logging
 from .OCR import Recognizer
 from .PDF import Transformer
+from . import logging
+from . import setting
 _cwd = Path(__file__).parent
 
 
@@ -254,6 +255,8 @@ class MainApp(main_ui.MainApp):
         self.mainwindow.title('pytools')
         self.ocr_frame = None
         self.pdf_frame = None
+        self.__setting = {}
+        self.__themes = {}
         image.set('start', self.start_label)
         self.__load_theme_submenu()
 
@@ -269,46 +272,76 @@ class MainApp(main_ui.MainApp):
             lambda msg: messagebox.showerror('error', msg),
         )
 
+    def __load_setting(self, setting: dict) -> None:
+        self.__setting.update(setting)
+        theme = setting.get('theme', 'xpnative')
+        load_theme = self.__themes.get(theme)
+        if load_theme is None:
+            logging.warning(
+                f'{theme} is part of ttkthemes, but you do not have ttkthemes',
+            )
+        else:
+            load_theme()
+
+    def __set_theme(self, theme: str) -> None:
+        self.__setting['theme'] = theme
+        self.__themes[theme]()
+
     def __load_theme_submenu(self) -> None:
+        def add_theme_command(theme: str) -> None:
+            self.theme_submenu.add_command(
+                label=theme,
+                command=partial(self.__set_theme, theme)
+            )
         # add theme options
         style = tk.ttk.Style(self.mainwindow)
-        for style_name in style.theme_names():
-            self.theme_submenu.add_command(
-                label=style_name,
-                command=partial(style.theme_use, style_name),
-            )
-        style.theme_use('xpnative')
-        self.theme_submenu.add('separator')
+        for i, theme in enumerate(style.theme_names()):
+            self.__themes[theme] = partial(style.theme_use, theme)
+            self.mainwindow.after(i * 100, add_theme_command, theme)
+        i += 1
+        self.mainwindow.after(
+            i * 100,
+            self.theme_submenu.add,
+            'separator',
+        )
 
         # 添加ttkthemes的主题样式
         def add_additional_themes():
-            def load(ttkthemes):
-                def set_theme(theme):
-                    self.theme_submenu.add_command(
-                        label=theme,
-                        command=partial(theme_style.set_theme, theme)
-                    )
+            try:
+                import ttkthemes
+            except ImportError:
+                msg = 'load ttkthemes failed, use pip to install it'
+                logging.info(msg)
+            else:
+                self.theme_submenu.delete('load more')
                 logging.info('loading ttkthemes......')
                 theme_style = ttkthemes.ThemedStyle(self.mainwindow)
                 for i, theme in enumerate(ttkthemes.THEMES):
-                    self.mainwindow.after(i * 100, set_theme, theme)
+                    self.__themes[theme] = partial(
+                        theme_style.set_theme,
+                        theme,
+                    )
+                    self.mainwindow.after(i * 100, add_theme_command, theme)
                 self.mainwindow.after(
                     (i + 1) * 100,
                     logging.info,
                     'ttkthemes loaded',
                 )
+        i += 1
+        self.mainwindow.after(
+            i * 100,
+            lambda: self.theme_submenu.add_command(
+                    label='load more',
+                    command=add_additional_themes
+                ),
+        )
+        i += 1
+        self.mainwindow.after(i * 100, add_additional_themes)
 
-            try:
-                import ttkthemes
-            except ImportError:
-                msg = 'ttkthemes is needed, use pip to install it'
-                logging.info(msg)
-            else:
-                self.theme_submenu.delete('load more')
-                load(ttkthemes)
-        self.theme_submenu.add_command(
-            label='load more',
-            command=add_additional_themes,
+        i += 1
+        self.mainwindow.after(i * 100, setting.load, self.__load_setting)
+        self.mainwindow.add_done_before_exit(
+            partial(setting.save, self.__setting),
         )
 
     def _clear_main_frame(self) -> None:

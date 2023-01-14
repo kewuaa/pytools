@@ -56,7 +56,7 @@ class OCRWidget(ttk.Frame):
         self.result_text.grid(column=0, columnspan=2, padx=20, row=2)
         button4 = ttk.Button(frame1)
         button4.configure(text='copy', width=5)
-        button4.grid(column=2, row=2, sticky="s")
+        button4.grid(column=2, row=2, sticky="sw")
         button4.configure(command=self.copy_result)
         frame1.pack(side="top")
         notebook1.add(frame1, text='single')

@@ -255,7 +255,7 @@ class Transformer:
         dest_path: str or Path = None,
         dpi: int = 300,
         alpha: bool = False,
-        format: str = 'png',
+        format: str = 'jpg',
     ):
         pdf_file = Path(pdf_file)
         if pdf_file.is_file():

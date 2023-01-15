@@ -293,6 +293,7 @@ class MainApp(main_ui.MainApp):
                 label=theme,
                 command=partial(self.__set_theme, theme)
             )
+        interval = 50
         # add theme options
         style = tk.ttk.Style(self.mainwindow)
         for i, theme in enumerate(style.theme_names()):
@@ -300,7 +301,7 @@ class MainApp(main_ui.MainApp):
             self.mainwindow.after(i * 100, add_theme_command, theme)
         i += 1
         self.mainwindow.after(
-            i * 100,
+            i * interval,
             self.theme_submenu.add,
             'separator',
         )
@@ -323,23 +324,23 @@ class MainApp(main_ui.MainApp):
                     )
                     self.mainwindow.after(i * 100, add_theme_command, theme)
                 self.mainwindow.after(
-                    (i + 1) * 100,
+                    (i + 1) * interval,
                     logging.info,
                     'ttkthemes loaded',
                 )
         i += 1
         self.mainwindow.after(
-            i * 100,
+            i * interval,
             lambda: self.theme_submenu.add_command(
                     label='load more',
                     command=add_additional_themes
                 ),
         )
         i += 1
-        self.mainwindow.after(i * 100, add_additional_themes)
+        self.mainwindow.after(i * interval, add_additional_themes)
 
         i += 1
-        self.mainwindow.after(i * 100, setting.load, self.__load_setting)
+        self.mainwindow.after(i * interval, setting.load, self.__load_setting)
         self.mainwindow.add_done_before_exit(
             partial(setting.save, self.__setting),
         )

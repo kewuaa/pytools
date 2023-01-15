@@ -32,12 +32,12 @@ class Transformer:
         end: int,
         pages: list,
     ) -> None:
-        cv = aiofile.AIOWrapper(Converter(str(file), password=password))
+        cv = Converter(str(file), password=password)
         dest_path = dest_path / (file.stem + '.docx')
         try:
-            await cv.convert(str(dest_path), start, end, pages)
+            cv.convert(str(dest_path), start, end, pages)
         finally:
-            await cv.close()
+            await aiofile.AWrapper(cv.close)()
 
     async def pdf2word(
         self,
@@ -226,10 +226,7 @@ class Transformer:
         format: str,
     ):
         async def save_page(index: int):
-            pm = await aiofile.AWrapper(pdf[index].get_pixmap)(
-                dpi=dpi,
-                alpha=alpha,
-            )
+            pm = pdf[index].get_pixmap(dpi=dpi, alpha=alpha)
             path = dest_path / f'{index + 1}.{format}'
             await aiofile.AWrapper(pm.save)(str(path))
         pdf = await aiofile.AWrapper(fitz.open)(str(pdf_file))

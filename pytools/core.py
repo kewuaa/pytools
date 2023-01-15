@@ -298,7 +298,7 @@ class MainApp(main_ui.MainApp):
         style = tk.ttk.Style(self.mainwindow)
         for i, theme in enumerate(style.theme_names()):
             self.__themes[theme] = partial(style.theme_use, theme)
-            self.mainwindow.after(i * 100, add_theme_command, theme)
+            self.mainwindow.after(i * interval, add_theme_command, theme)
         i += 1
         self.mainwindow.after(
             i * interval,
@@ -322,7 +322,11 @@ class MainApp(main_ui.MainApp):
                         theme_style.set_theme,
                         theme,
                     )
-                    self.mainwindow.after(i * 100, add_theme_command, theme)
+                    self.mainwindow.after(
+                        i * interval,
+                        add_theme_command,
+                        theme,
+                    )
                 self.mainwindow.after(
                     (i + 1) * interval,
                     logging.info,

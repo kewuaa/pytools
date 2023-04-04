@@ -40,7 +40,7 @@ class OCRWidget(OCR_ui.OCRWidget):
         )
 
     def _init_recognizer(self) -> None:
-        self._recognizer = Recognizer(loop=asynctk._callback_loop)
+        self._recognizer = Recognizer(loop=asynctk.async_loop)
         asynctk.add_done_before_exit(self._recognizer.exit)
 
     def choose_file(self) -> None:
@@ -181,7 +181,7 @@ class PDFWidget(PDF_ui.PDFWidget):
         )
 
     def _init_pdf_transformer(self) -> None:
-        self._transformer = Transformer(loop=asynctk._callback_loop)
+        self._transformer = Transformer(loop=asynctk.async_loop)
         keys = self._transformer.SupportType.__members__.keys()
         self.type_combobox.configure(values=tuple(keys))
         self.type_combobox.current(0)

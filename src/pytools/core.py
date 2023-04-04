@@ -8,7 +8,6 @@ import asyncio
 
 from PIL import Image
 
-from pytools import image
 from .ui import main_ui
 from .ui import OCR_ui
 from .ui import PDF_ui
@@ -17,6 +16,7 @@ from .lib.alib import asynctk
 from .lib.alib import aiofile
 from .OCR import Recognizer
 from .PDF import Transformer
+from . import image
 from . import logging
 from . import setting
 _cwd = Path(__file__).parent

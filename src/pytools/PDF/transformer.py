@@ -7,8 +7,8 @@ from pdf2docx import Converter
 from PIL import Image
 import fitz
 
-from pytools.lib.alib import aiofile
-from pytools import logging
+from ..lib.alib import aiofile
+from .. import logging
 imopen = aiofile.AWrapper(Image.open)
 
 

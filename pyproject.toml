@@ -1,0 +1,15 @@
+[build-system]
+requires = ['setuptools']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = "pytools"
+version = "0.0.1"
+description = "some useful tools"
+readme = "README.md"
+classifiers = [
+    'Programmimg Language :: Python :: 3'
+]
+
+[project.scripts]
+pytools = 'pytools.__main__:main'

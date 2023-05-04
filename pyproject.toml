@@ -10,6 +10,15 @@ readme = "README.md"
 classifiers = [
     'Programmimg Language :: Python :: 3'
 ]
+dependencies = [
+    "aiohttp",
+    "pdf2docx",
+    "Pillow",
+    "PyMuPDF",
+    "pyperclip",
+    "pywin32",
+    "aiofiles",
+]
 
 [project.scripts]
 pytools = 'pytools.__main__:main'

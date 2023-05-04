@@ -5,11 +5,10 @@ import asyncio
 from win32com import client
 from pdf2docx import Converter
 from PIL import Image
+import aiofiles
 import fitz
 
-from ..lib.alib import aiofile
 from .. import logging
-imopen = aiofile.AWrapper(Image.open)
 
 
 class Transformer:
@@ -37,7 +36,7 @@ class Transformer:
         try:
             cv.convert(str(dest_path), start, end, pages)
         finally:
-            await aiofile.AWrapper(cv.close)()
+            await self.__loop.run_in_executor(None, cv.close)
 
     async def pdf2word(
         self,
@@ -91,8 +90,7 @@ class Transformer:
 
     async def __word2pdf(self, word, file: Path, dest_path: Path) -> None:
         dest_path = dest_path / (file.stem + '.pdf')
-        doc = await aiofile.AWrapper(word.Documents.Open)(str(file))
-        doc = aiofile.AIOWrapper(doc)
+        doc = await self.__loop.run_in_executor(None, word.Documents.Open, str(file))
         try:
             await doc.SaveAs(str(dest_path), FileFormat=17)
         except Exception as e:

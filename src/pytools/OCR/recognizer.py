@@ -1,3 +1,4 @@
+from typing import Optional, Union
 from urllib.parse import quote
 from base64 import b64encode
 from pathlib import Path
@@ -5,16 +6,20 @@ import asyncio
 import json
 
 from aiohttp import ClientSession
+import aiofiles
 
 from .. import logging
-from ..lib.alib import aiofile
+from ..types import AnyPath
 
 
 class Recognizer:
     support_type = ('.jpg', '.jpeg', '.png', '.bmp', '.pdf')
     URL = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic'
 
-    def __init__(self, loop: asyncio.base_events.BaseEventLoop = None) -> None:
+    def __init__(
+        self,
+        loop: Optional[asyncio.base_events.BaseEventLoop] = None
+    ) -> None:
         self.__loop = loop = loop or asyncio.get_event_loop()
         self.__sess = ClientSession(loop=loop)
         self.__keys = loop.create_task(self.__load_api_keys())
@@ -29,7 +34,7 @@ class Recognizer:
         self.__concurrency = concurrency
         if concurrency > 2:
             logging.info(f'concurrency has been setted to {concurrency}, '
-                         'make sure that you account support it')
+                         'make sure that your account support it')
 
     def __encode(self, data: bytes) -> str:
         b64str = b64encode(data).decode()
@@ -45,7 +50,7 @@ class Recognizer:
             msg = f'do not find any config file at {str(setting_path)}'
             logging.warning(msg)
             raise RuntimeError(msg)
-        async with aiofile.async_open(setting_path, 'r') as f:
+        async with aiofiles.open(setting_path, 'r') as f:
             lines = await f.read()
         config = json.loads(lines.strip())
         if ('API_KEY' not in config) | ('SECRET_KEY' not in config):
@@ -99,7 +104,7 @@ class Recognizer:
                 msg = f'do not support {suffix} type'
                 logging.error(msg)
                 raise RuntimeError(msg)
-            async with aiofile.async_open(file, 'rb') as f:
+            async with aiofiles.open(file, 'rb') as f:
                 content = await f.read()
             if suffix == '.pdf':
                 data['pdf_file'] = self.__encode(content)
@@ -122,7 +127,7 @@ class Recognizer:
             for result in resp_dict['words_result']
         )
 
-    async def recognize(self, path: str or Path, **params) -> str or dict:
+    async def recognize(self, path: AnyPath, **params) -> Union[str, dict]:
         if not path:
             return await self.__recognize('', **params)
         path = Path(path)

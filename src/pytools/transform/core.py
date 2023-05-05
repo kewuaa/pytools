@@ -13,7 +13,7 @@ import fitz
 import aiofiles
 
 from .. import logging
-AnyPath = Union[Path, str]
+from ..types import AnyPath
 
 
 class Converter(_Converter):

@@ -1,4 +1,4 @@
-from typing import Union, Optional, Iterable
+from typing import Optional, Iterable
 from pathlib import Path
 from io import BytesIO
 import asyncio
@@ -34,7 +34,7 @@ async def pdf2img(
     pdf_file: AnyPath,
     dest_path: AnyPath,
     *, loop: Optional[asyncio.base_events.BaseEventLoop] = None,
-    dpi: int = 300,
+    dpi: Optional[int] = None,
 ) -> None:
     """实现 PDF 到 图片的转换
 
@@ -45,29 +45,34 @@ async def pdf2img(
     """
 
     async def convert_page(index: int) -> None:
-        pixmap = pdf[index].get_pixmap(dpi=dpi)
+        pixmap = pdf[index].get_pixmap(dpi=dpi or 100)
         imbytes = pixmap.tobytes()
         page = index + 1
         save_path = dest_path / f'page_{page}.png'
         async with aiofiles.open(save_path, 'wb') as f:
             await f.write(imbytes)
+        # with open(save_path, 'wb') as f:
+        #     f.write(imbytes)
         logging.info(f'page {page} of {pdf_file} converted')
-    dest_path = Path(dest_path)
     loop = loop or asyncio.get_running_loop()
+    dest_path = Path(dest_path) / Path(pdf_file).stem
 
     async with aiofiles.open(pdf_file, 'rb') as f:
         buf = await f.read()
     pdf = fitz.Document(stream=buf, filetype='pdf')
     close_pdf = aos.wrap(pdf.close)
     try:
-        aiofiles.ospath.wrap
         await aos.makedirs(dest_path, exist_ok=True)
         page_num = pdf.page_count
+        from time import time
+        start = time()
         tasks = [
             loop.create_task(convert_page(index)) for index in range(page_num)
         ]
         for task in tasks:
             await task
+        end = time()
+        print(f'total cost {end - start} second')
         logging.info(f'pdf2img done, result saved at {dest_path}')
     finally:
         await close_pdf(loop=loop)
@@ -89,6 +94,7 @@ async def pdf2docx(
     """
 
     loop = loop or asyncio.get_running_loop()
+    dest_path = Path(dest_path) / (Path(pdf_file).stem + '.docx')
 
     async with aiofiles.open(pdf_file, 'rb') as f:
         buf = await f.read()
@@ -115,17 +121,14 @@ async def img2pdf(
     """
 
     async def load_img(img_file: AnyPath) -> Image.Image:
+        img_file = Path(img_file)
         async with aiofiles.open(img_file, 'rb') as f:
             img_data = await f.read()
         img = Image.open(BytesIO(img_data))
-        if_png = 0
-        if type(img_file) is str:
-            if img_file.endswith('.png'):
-                if_png = 1
-        else:
-            if img_file.suffix == '.png':
-                if_png = 1
-        if if_png:
+        is_png = 0
+        if img_file.suffix == '.png':
+            is_png = 1
+        if is_png:
             bg = Image.new('RGB', img.size, (255, 255, 255))
             channels = img.split()
             bg.paste(img, mask=None if len(channels) < 4 else channels[3])
@@ -133,19 +136,20 @@ async def img2pdf(
         logging.info(f'{img_file} loaded')
         return img
     loop = loop or asyncio.get_running_loop()
+    dest_path = Path(dest_path) / 'output.pdf'
 
-    imgs = [
+    tasks = [
         loop.create_task(load_img(img_file))
         for img_file in img_files
     ]
-    imgs: list[Image.Image] = [await task for task in imgs]
-    img_io = BytesIO()
+    imgs: list[Image.Image] = [await task for task in tasks]
+    pdf = BytesIO()
     if len(imgs) > 1:
-        imgs[0].save(img_io, 'PDF', save_all=True, append_images=imgs[1:])
+        imgs[0].save(pdf, 'PDF', save_all=True, append_images=imgs[1:])
     else:
-        imgs[0].save(img_io, 'PDF')
+        imgs[0].save(pdf, 'PDF')
     async with aiofiles.open(dest_path, 'wb') as f:
-        await f.write(img_io.getvalue())
+        await f.write(pdf.getvalue())
     logging.info(f'img2pdf done, result saved at {dest_path}')
 
 
@@ -176,5 +180,6 @@ async def docx2pdf(
             word.Quit()
             pythoncom.CoUninitialize()
     loop = loop or asyncio.get_running_loop()
+    dest_path = Path(dest_path) / (Path(docx_file).stem + '.pdf')
 
     await convert(loop=loop)

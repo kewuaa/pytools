@@ -1,3 +1,0 @@
-[file-run]
-command:python=python -m src.pytools
-cwd=<root>

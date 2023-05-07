@@ -97,6 +97,18 @@
                  <height>261</height>
                 </size>
                </property>
+               <property name="font">
+                <font>
+                 <pointsize>10</pointsize>
+                 <bold>false</bold>
+                </font>
+               </property>
+               <property name="undoRedoEnabled">
+                <bool>true</bool>
+               </property>
+               <property name="readOnly">
+                <bool>false</bool>
+               </property>
               </widget>
              </item>
              <item alignment="Qt::AlignBottom">

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainqIakdQ.ui'
+## Form generated from reading UI file 'maincWRRdu.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.5.0
 ##
@@ -80,6 +80,12 @@ class Ui_MainWindow(object):
         self.result_textbrowser = QTextBrowser(self.frame_2)
         self.result_textbrowser.setObjectName(u"result_textbrowser")
         self.result_textbrowser.setMinimumSize(QSize(371, 261))
+        font2 = QFont()
+        font2.setPointSize(10)
+        font2.setBold(False)
+        self.result_textbrowser.setFont(font2)
+        self.result_textbrowser.setUndoRedoEnabled(True)
+        self.result_textbrowser.setReadOnly(False)
 
         self.horizontalLayout_4.addWidget(self.result_textbrowser)
 

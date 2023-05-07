@@ -138,19 +138,20 @@ class Recognizer:
                 async with aiofiles.open(img, 'rb') as f:
                     content = await f.read()
                 if Path(img).suffix == '.pdf':
-                    data['pdf_file'] = content
+                    data['pdf_file'] = self._encode(content)
                 else:
-                    data['image'] = content
+                    data['image'] = self._encode(content)
             return await self._send_data(data)
         coros = {img: parse(img) for img in imgs}
         concurrency = self._concurrency
         result = {}
+        ids = tuple(coros.keys())
         for i in range(0, len(coros), concurrency):
             tasks = {
                 coro_id: self._loop.create_task(coros[coro_id])
-                for coro_id in coros.keys()[i: i + concurrency]
+                for coro_id in ids[i: i + concurrency]
             }
-            for _id, task in tasks:
+            for _id, task in tasks.items():
                 result[_id] = await task
         logging.info('successfully recognized')
         return result

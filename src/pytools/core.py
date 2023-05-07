@@ -1,11 +1,16 @@
 from typing import Callable, Any, Optional
 from functools import partial, wraps
 from pathlib import Path
+from io import BytesIO
+
 import sys
 import asyncio
 
 from PySide6 import QtWidgets
 from qasync import QEventLoop, asyncClose
+from PIL import ImageGrab, Image
+import pyperclip
+import aiofiles
 
 from .transform import Transformer, TransformType
 from .OCR import Recognizer
@@ -89,6 +94,10 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
         self.from_file_button.clicked.connect(
             partial(self._recognize_files, loop=self._loop)
         )
+        self.from_clipboard_button.clicked.connect(
+            partial(self._recognize_img_from_clipboard, loop=self._loop)
+        )
+        self.copy_button.clicked.connect(self._copy_textbrowser)
 
     def _center(self):
         """窗口居中。"""
@@ -102,14 +111,36 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
     async def _recognize_img_from_clipboard(self) -> None:
         """识别剪切板中的图片。"""
 
-        img_data = b''
-        data = {
-            'image': img_data
-        }
+        clipboard_img = ImageGrab.grabclipboard()
+        if clipboard_img is None:
+            QtWidgets.QMessageBox.information(
+                self, 'info',
+                '剪切板中未检测到图片'
+            )
+            return
+        elif isinstance(clipboard_img, Image.Image):
+            img_io = BytesIO()
+            clipboard_img.save(img_io, 'PNG')
+            img_data = img_io.getvalue()
+        else:
+            async with aiofiles.open(clipboard_img[0], 'rb') as f:
+                img_data = await f.read()
+        data = {'image': self._recognizer._encode(img_data)}
         result = await self._recognizer._send_data(data)
-        self.result_textbrowser.clear()
-        self.result_textbrowser.append('<h1>clipboard:</h1>')
-        self.result_textbrowser.append(result)
+        self.result_textbrowser.setText(result)
+
+    def _copy_textbrowser(self) -> None:
+        """复制文本框中的内容到剪切板。"""
+
+        text = self.result_textbrowser.toPlainText()
+        if text.strip():
+            pyperclip.copy(text)
+        else:
+            QtWidgets.QMessageBox.information(
+                self,
+                'info',
+                '文本框为空'
+            )
 
     @to_sync
     async def _recognize_files(self) -> None:
@@ -119,15 +150,19 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
             self,
             '选择一个或多个图片',
             str(Path.cwd()),
-            filter= 'image file (*.jpg,*.png,*.bmp);;PDF file (*.pdf)'
+            filter= 'image file (*.jpg *.png *.bmp);;PDF file (*.pdf)'
         )
         if not files:
             return
         result = await self._recognizer.recognize(files)
-        self.result_textbrowser.clear()
-        for _id, text in result:
-            self.result_textbrowser.append(f'<h1>{_id}:</h1>')
-            self.result_textbrowser.append(text)
+        if len(result) > 1:
+            self.result_textbrowser.clear()
+            for _id, text in result.items():
+                self.result_textbrowser.append(f'<h1>{_id}:</h1>')
+                self.result_textbrowser.append(text)
+        else:
+            for text in result.values():
+                self.result_textbrowser.setText(text)
 
     def _register_transform_task(self) -> None:
         """注册转换任务。"""
@@ -171,7 +206,7 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
             # elif _type is TransformType.IMG2PDF:
             #     _filter = 'image file (*.jpg,*.png,*.bmp)'
             else:
-                _filter = 'docx file (*.doc,*.docx)'
+                _filter = 'docx file (*.doc *.docx)'
             files, fts = QtWidgets.QFileDialog.getOpenFileNames(
                 self,
                 '选择一个或多个文件',

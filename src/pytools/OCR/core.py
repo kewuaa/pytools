@@ -122,27 +122,27 @@ class Recognizer:
 
     async def recognize(
         self,
-        files: Optional[Iterator[AnyPath]],
+        imgs: Optional[Iterator[AnyPath]] = None,
     ) -> dict:
         """对文件输入进行识别。
 
-        :param files: 需要识别的一个或多个文件
+        :param imgs: 需要识别的一个或多个图片
         :return: 返回字典形式的结果
         """
 
-        async def parse(file: AnyPath):
+        async def parse(img: AnyPath):
             data = {}
-            if str(file).startswith('http'):
-                data['url'] = file
+            if str(img).startswith('http'):
+                data['url'] = img
             else:
-                async with aiofiles.open(file, 'rb') as f:
+                async with aiofiles.open(img, 'rb') as f:
                     content = await f.read()
-                if Path(file).suffix == '.pdf':
+                if Path(img).suffix == '.pdf':
                     data['pdf_file'] = content
                 else:
                     data['image'] = content
             return await self._send_data(data)
-        coros = {file: parse(file) for file in files}
+        coros = {img: parse(img) for img in imgs}
         concurrency = self._concurrency
         result = {}
         for i in range(0, len(coros), concurrency):

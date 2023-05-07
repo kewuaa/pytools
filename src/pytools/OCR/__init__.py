@@ -1,1 +1,1 @@
-from .recognizer import Recognizer
+from .core import Recognizer

@@ -64,15 +64,11 @@ async def pdf2img(
     try:
         await aos.makedirs(dest_path, exist_ok=True)
         page_num = pdf.page_count
-        from time import time
-        start = time()
         tasks = [
             loop.create_task(convert_page(index)) for index in range(page_num)
         ]
         for task in tasks:
             await task
-        end = time()
-        print(f'total cost {end - start} second')
         logging.info(f'pdf2img done, result saved at {dest_path}')
     finally:
         await close_pdf(loop=loop)

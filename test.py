@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from src.pytools.transform import Transformer, TransformType
+from src import pytools
 
 
 def test_transformer():
@@ -30,4 +31,5 @@ def test_transformer():
     transformer.run()
 
 
-test_transformer()
+# test_transformer()
+pytools.App().run()

@@ -4,6 +4,7 @@ from enum import IntEnum
 import asyncio
 
 from .core import pdf2img, pdf2docx, img2pdf, docx2pdf
+from .. import logging
 from ..types import AnyPath
 
 
@@ -29,8 +30,12 @@ class Transformer:
         :param loop: 事件循环对象
         """
 
-        self._loop = loop or asyncio.get_event_loop()
-        self._in_self_loop = not self._loop.is_running()
+        if loop is None:
+            self._loop = asyncio.get_event_loop()
+            self._in_self_loop = 1
+        else:
+            self._loop = loop
+            self._in_self_loop = 0
         self._pending_tasks = asyncio.queues.Queue(8)
 
     def __del__(self) -> None:
@@ -94,9 +99,14 @@ class Transformer:
         if self._in_self_loop:
             self._loop.stop()
 
-    def run(self) -> None:
+    def run(self) -> Optional[asyncio.base_events.BaseEventLoop]:
         """启动事件循环。"""
 
-        self._loop.create_task(self._run())
+        if self._pending_tasks.empty():
+            logging.warning('nothing is registered')
+            return
+        task = self._loop.create_task(self._run())
         if self._in_self_loop:
             self._loop.run_forever()
+        else:
+            return task

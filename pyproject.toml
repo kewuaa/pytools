@@ -18,6 +18,8 @@ dependencies = [
     "pyperclip",
     "pywin32",
     "aiofiles",
+    "pyside6",
+    "qasync",
 ]
 
 [project.scripts]

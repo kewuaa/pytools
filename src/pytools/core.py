@@ -135,10 +135,13 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
         text = self.result_textbrowser.toPlainText()
         if text.strip():
             pyperclip.copy(text)
+            QtWidgets.QMessageBox.information(
+                self, 'info',
+                '复制成功'
+            )
         else:
             QtWidgets.QMessageBox.information(
-                self,
-                'info',
+                self, 'info',
                 '文本框为空'
             )
 

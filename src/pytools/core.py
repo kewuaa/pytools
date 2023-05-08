@@ -71,9 +71,9 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
         self._recognizer.exit = asyncClose(self._recognizer.exit)
 
         # config logging
-        logging.add_warning_logger(
-            partial(QtWidgets.QMessageBox.warning, self, 'warning')
-        )
+        # logging.add_warning_logger(
+        #     partial(QtWidgets.QMessageBox.warning, self, 'warning')
+        # )
 
         # init UI related
         super().__init__()

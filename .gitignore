@@ -2,4 +2,5 @@
 .pytest_cache
 .venv
 build/
+dist/
 test_source

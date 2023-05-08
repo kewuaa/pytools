@@ -67,7 +67,7 @@ class Recognizer:
             lines = await f.read()
         config = json.loads(lines.strip())
         if ('API_KEY' not in config) | ('SECRET_KEY' not in config):
-            msg = 'please check you config and make sure that '
+            msg = 'please check you config and make sure that ' \
             'API_KEY and SECRET_KEY should be both within it'
             logging.warning(msg)
             raise RuntimeError(msg)

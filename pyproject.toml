@@ -1,6 +1,6 @@
 [project]
 name = "pytools"
-version = "0.0.1"
+version = "0.1.0"
 description = "some useful tools"
 readme = "README.md"
 classifiers = [

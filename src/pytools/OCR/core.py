@@ -1,14 +1,14 @@
-from typing import Optional, Iterator
-from urllib.parse import quote
-from base64 import b64encode
-from pathlib import Path
 import asyncio
 import json
+from base64 import b64encode
+from pathlib import Path
+from typing import Iterable, Optional
+from urllib.parse import quote
 
-from aiohttp import ClientSession
 import aiofiles
+from aiohttp import ClientSession
 
-from .. import logging
+from ..logging import logger
 from ..types import AnyPath
 
 
@@ -21,10 +21,10 @@ class Recognizer:
         self,
         loop: Optional[asyncio.base_events.BaseEventLoop] = None
     ) -> None:
-        self._loop = loop = loop or asyncio.get_event_loop()
-        self._sess = ClientSession(loop=loop)
-        self._keys = loop.create_task(self._load_api_keys())
-        self._token = loop.create_task(self._init_access_token())
+        self._loop = loop or asyncio.get_event_loop()
+        self._sess = ClientSession(loop=self._loop)
+        self._keys = self._loop.create_task(self._load_api_keys())
+        self._token = self._loop.create_task(self._init_access_token())
         self._concurrency = 2
 
     def reset_concurrency(self, concurrency: int) -> None:
@@ -35,7 +35,7 @@ class Recognizer:
 
         self._concurrency = concurrency
         if concurrency > 2:
-            logging.info(f'concurrency has been setted to {concurrency}, '
+            logger.info(f'concurrency has been setted to {concurrency}, '
                          'make sure that your account support it')
 
     def _encode(self, data: bytes) -> str:
@@ -61,7 +61,7 @@ class Recognizer:
         setting_path = config_path / 'config.json'
         if not setting_path.exists():
             msg = f'do not find any config file at {str(setting_path)}'
-            logging.warning(msg)
+            logger.warning(msg)
             raise RuntimeError(msg)
         async with aiofiles.open(setting_path, 'r') as f:
             lines = await f.read()
@@ -69,7 +69,7 @@ class Recognizer:
         if ('API_KEY' not in config) | ('SECRET_KEY' not in config):
             msg = 'please check you config and make sure that ' \
             'API_KEY and SECRET_KEY should be both within it'
-            logging.warning(msg)
+            logger.warning(msg)
             raise RuntimeError(msg)
         return config['API_KEY'], config['SECRET_KEY']
 
@@ -88,7 +88,7 @@ class Recognizer:
         token = resp_dict.get('access_token')
         if not token:
             msg = 'API_KEY and SECRET_KEY error'
-            logging.error(msg)
+            logger.error(msg)
             raise RuntimeError(msg)
         return token
 
@@ -113,7 +113,7 @@ class Recognizer:
         resp_dict = await resp.json(content_type=None)
         if 'error_code' in resp_dict:
             msg = resp_dict['error_msg']
-            logging.error(msg)
+            logger.error(msg)
             raise RuntimeError(msg)
         return '\n'.join(
             result['words']
@@ -122,7 +122,7 @@ class Recognizer:
 
     async def recognize(
         self,
-        imgs: Optional[Iterator[AnyPath]] = None,
+        imgs: Iterable[AnyPath],
     ) -> dict:
         """对文件输入进行识别。
 
@@ -153,7 +153,7 @@ class Recognizer:
             }
             for _id, task in tasks.items():
                 result[_id] = await task
-        logging.info('successfully recognized')
+        logger.info('successfully recognized')
         return result
 
     async def exit(self):

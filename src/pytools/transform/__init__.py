@@ -1,11 +1,9 @@
-from functools import partial
-from typing import Union, Iterator, Optional
-from enum import IntEnum
 import asyncio
+from enum import IntEnum
+from typing import Iterable, Optional
 
-from .core import pdf2img, pdf2docx, img2pdf, docx2pdf
-from .. import logging
 from ..types import AnyPath
+from .core import docx2pdf, img2pdf, pdf2docx, pdf2img
 
 
 class TransformType(IntEnum):
@@ -30,83 +28,30 @@ class Transformer:
         :param loop: 事件循环对象
         """
 
-        if loop is None:
-            self._loop = asyncio.get_event_loop()
-            self._in_self_loop = 1
-        else:
-            self._loop = loop
-            self._in_self_loop = 0
-        self._pending_tasks = asyncio.queues.Queue(8)
+        self._loop = loop if loop is not None else asyncio.get_event_loop()
 
-    def __del__(self) -> None:
-        if self._in_self_loop:
-            async def shutdown():
-                await self._loop.shutdown_asyncgens()
-                await self._loop.shutdown_default_executor()
-            if self._loop.is_running():
-                self._loop.stop()
-            for task in asyncio.tasks.all_tasks(self._loop):
-                task.cancel()
-            self._loop.run_until_complete(shutdown())
-
-    def register(
+    def __call__(
         self,
-        files: Iterator[Union[AnyPath, Iterator[AnyPath]]],
+        files: Iterable[AnyPath],
         dest_path: AnyPath,
-        _type: TransformType,
-        **kwargs,
-    ) -> None:
-        """添加需要转换的文件
+        type: TransformType,
+    )-> None:
+        """ 转换。
 
         :param files: 需要转换的文件
         :param dest_path: 转换后的文件的保存位置
-        :param _type: 转换类型
+        :param type: 转换类型
         """
 
-        if _type is TransformType.PDF2IMG:
-            transform = partial(pdf2img, dpi=kwargs.get('dpi'))
-        elif _type is TransformType.PDF2DOCX:
-            transform = pdf2docx
-        elif _type is TransformType.IMG2PDF:
-            transform = img2pdf
-        else:
-            transform = docx2pdf
-        for file in files:
-            self._loop.create_task(
-                self._pending_tasks.put(
-                    (transform, file, dest_path)
-                )
-            )
-
-    async def _run(self) -> None:
-        """处理循环中的任务。"""
-
-        self._loop.call_soon_threadsafe(
-            self._loop.create_task,
-            self._stop(asyncio.current_task())
-        )
-        while 1:
-            task = await self._pending_tasks.get()
-            transform, *args = task
-            self._loop.create_task(transform(*args))\
-                .add_done_callback(lambda fut: self._pending_tasks.task_done())
-
-    async def _stop(self, run_task: asyncio.tasks.Task) -> None:
-        """当任务全部完成时停止事件循环。"""
-
-        await self._pending_tasks.join()
-        run_task.cancel()
-        if self._in_self_loop:
-            self._loop.stop()
-
-    def run(self) -> Optional[asyncio.base_events.BaseEventLoop]:
-        """启动事件循环。"""
-
-        if self._pending_tasks.empty():
-            logging.warning('nothing is registered')
-            return
-        task = self._loop.create_task(self._run())
-        if self._in_self_loop:
-            self._loop.run_forever()
-        else:
-            return task
+        if type is TransformType.PDF2IMG:
+            for file in files:
+                self._loop.create_task(pdf2img(file, dest_path, loop=self._loop))
+        elif type is TransformType.PDF2DOCX:
+            for file in files:
+                self._loop.create_task(pdf2docx(file, dest_path, loop=self._loop))
+        elif type is TransformType.IMG2PDF:
+            for imgs_dir in files:
+                self._loop.create_task(img2pdf(imgs_dir, dest_path, loop=self._loop))
+        elif type is TransformType.DOCX2PDF:
+            for file in files:
+                self._loop.create_task(docx2pdf(file, dest_path, loop=self._loop))

@@ -32,15 +32,9 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QFrame" name="frame_2">
+         <widget class="QWidget" name="widget_2" native="true">
           <property name="autoFillBackground">
            <bool>true</bool>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
           </property>
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="0" column="0">
@@ -131,40 +125,17 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QFrame" name="frame">
+         <widget class="QWidget" name="widget" native="true">
           <property name="autoFillBackground">
            <bool>true</bool>
           </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="2" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_2">
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QListWidget" name="task_listwidget"/>
-             </item>
-             <item alignment="Qt::AlignBottom">
-              <widget class="QPushButton" name="run_button">
-               <property name="text">
-                <string>运行</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="1" column="0">
+           <item row="2" column="0" colspan="4">
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
-              <widget class="QPushButton" name="file_choose_button">
+              <widget class="QPushButton" name="transform_button">
                <property name="text">
-                <string>文件选择</string>
+                <string>转换</string>
                </property>
               </widget>
              </item>
@@ -183,7 +154,28 @@
              </item>
             </layout>
            </item>
-           <item row="0" column="0">
+           <item row="1" column="0">
+            <widget class="QRadioButton" name="pdf2img_radioButton">
+             <property name="text">
+              <string>pdf -&gt; image</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QRadioButton" name="docx2pdf_radioButton">
+             <property name="text">
+              <string>docx -&gt; pdf</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QRadioButton" name="img2pdf_radioButton">
+             <property name="text">
+              <string>image -&gt; pdf</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="4">
             <widget class="QLabel" name="label">
              <property name="font">
               <font>
@@ -194,7 +186,30 @@
              <property name="text">
               <string>欢迎</string>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
             </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QRadioButton" name="pdf2docx_radioButton">
+             <property name="text">
+              <string>pdf -&gt; docx</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
            </item>
           </layout>
          </widget>

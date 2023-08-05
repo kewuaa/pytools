@@ -1,103 +1,63 @@
-from typing import Callable, Any, Optional
-from functools import partial, wraps
-from pathlib import Path
-from io import BytesIO
-
-import sys
 import asyncio
+import sys
+from io import BytesIO
+from pathlib import Path
 
-from PySide6 import QtWidgets
-from qasync import QEventLoop, asyncClose
-from PIL import ImageGrab, Image
-import pyperclip
 import aiofiles
+import pyperclip
+from PIL import Image, ImageGrab
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
+from qasync import QEventLoop, asyncClose, asyncSlot
 
-from .transform import Transformer, TransformType
 from .OCR import Recognizer
-from .ui import ui_main, ui_popup_choose
-from . import logging
+from .transform import Transformer, TransformType
+from .types import AnyPath
+from .ui.main_ui import Ui_MainWindow
 
 
-def to_sync(async_func: Callable) -> Callable:
-    """将异步函数转换为同步函数。"""
-
-    @wraps(async_func)
-    def run(
-        *args,
-        loop: Optional[asyncio.base_events.BaseEventLoop] = None,
-        **kwargs
-    ) -> Any:
-        loop = loop or asyncio.get_running_loop()
-        return loop.create_task(async_func(*args, **kwargs))
-    return run
-
-
-class PopupChoose(ui_popup_choose.Ui_Dialog, QtWidgets.QDialog):
-    """弹出选择框。"""
-
-    _LIST_ITEMS = tuple(_type.title() for _type in TransformType._member_names_)
-
-    def __init__(self, parent: Optional[QtWidgets.QWidget]) -> None:
-        super().__init__(parent)
-        asyncio.get_running_loop().call_soon(self.setupUi)
-
-    def setupUi(self) -> None:
-        """初始化 UI。"""
-
-        super().setupUi(self)
-        self.comboBox.addItems(self._LIST_ITEMS)
-
-    @property
-    def choosed_item(self) -> TransformType:
-        index = self.comboBox.currentIndex()
-        return TransformType(index)
-
-
-class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
-    """GUI."""
+class App(Ui_MainWindow, QtWidgets.QMainWindow):
+    """ GUI."""
 
     def __init__(self) -> None:
         # init qt application and event loop
         self._qt_app = QtWidgets.QApplication(sys.argv)
-        self._loop: asyncio.base_events.BaseEventLoop = \
-            QEventLoop(app=self._qt_app)
+        self._qt_app.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
+        self._loop = QEventLoop(app=self._qt_app)
         asyncio.set_event_loop(self._loop)
 
         # init transformer
         self._transformer = Transformer(loop=self._loop)
         # init recognizer
         self._recognizer = Recognizer(loop=self._loop)
-        # let recognizer exit before app exit
-        self._recognizer.exit = asyncClose(self._recognizer.exit)
-
-        # config logging
-        # logging.add_warning_logger(
-        #     partial(QtWidgets.QMessageBox.warning, self, 'warning')
-        # )
 
         # init UI related
         super().__init__()
         self._loop.call_soon(self.setupUi)
 
+    def deinit(self) -> None:
+        asyncClose(self._recognizer.exit)()
+
     def setupUi(self) -> None:
-        """渲染 UI 以及绑定回调函数。"""
-
-        # setup UI
         super().setupUi(self)
+        self.buttonGroup = QtWidgets.QButtonGroup(self)
+        self.buttonGroup.addButton(
+            self.pdf2img_radioButton,
+            TransformType.PDF2IMG.value
+        )
+        self.buttonGroup.addButton(
+            self.pdf2docx_radioButton,
+            TransformType.PDF2DOCX.value
+        )
+        self.buttonGroup.addButton(
+            self.img2pdf_radioButton,
+            TransformType.IMG2PDF.value
+        )
+        self.buttonGroup.addButton(
+            self.docx2pdf_radioButton,
+            TransformType.DOCX2PDF.value
+        )
         self._center()
-
-        # connect signal
-        self.run_button.clicked.connect(
-            partial(self._begin_transform, loop=self._loop)
-        )
-        self.file_choose_button.clicked.connect(self._register_transform_task)
-        self.from_file_button.clicked.connect(
-            partial(self._recognize_files, loop=self._loop)
-        )
-        self.from_clipboard_button.clicked.connect(
-            partial(self._recognize_img_from_clipboard, loop=self._loop)
-        )
-        self.copy_button.clicked.connect(self._copy_textbrowser)
 
     def _center(self):
         """窗口居中。"""
@@ -107,10 +67,8 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    @to_sync
-    async def _recognize_img_from_clipboard(self) -> None:
-        """识别剪切板中的图片。"""
-
+    @asyncSlot()
+    async def on_from_clipboard_button_clicked(self) -> None:
         clipboard_img = ImageGrab.grabclipboard()
         if clipboard_img is None:
             QtWidgets.QMessageBox.information(
@@ -129,9 +87,8 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
         result = await self._recognizer._send_data(data)
         self.result_textbrowser.setText(result)
 
-    def _copy_textbrowser(self) -> None:
-        """复制文本框中的内容到剪切板。"""
-
+    @Slot()
+    def on_copy_button_clicked(self) -> None:
         text = self.result_textbrowser.toPlainText()
         if text.strip():
             pyperclip.copy(text)
@@ -145,16 +102,15 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
                 '文本框为空'
             )
 
-    @to_sync
-    async def _recognize_files(self) -> None:
-        """识别一个或多个文件。"""
-
+    @asyncSlot()
+    async def on_from_file_button_clicked(self) -> None:
         files, fts = QtWidgets.QFileDialog.getOpenFileNames(
             self,
             '选择一个或多个图片',
             str(Path.cwd()),
             filter= 'image file (*.jpg *.png *.bmp);;PDF file (*.pdf)'
         )
+        _ = fts
         if not files:
             return
         result = await self._recognizer.recognize(files)
@@ -167,44 +123,49 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
             for text in result.values():
                 self.result_textbrowser.setText(text)
 
-    def _register_transform_task(self) -> None:
+    def _transform(self, *files: AnyPath, type: TransformType):
+        dest_path = QtWidgets.QFileDialog.getExistingDirectory(
+            self,
+            '选择保存目录'
+        )
+        if dest_path:
+            self._transformer(files, dest_path, type)
+
+    @Slot()
+    def on_transform_button_clicked(self) -> None:
         """注册转换任务。"""
 
-        # 选择转换类型
-        popup_choose = PopupChoose(self)
-        if not popup_choose.exec_():
+        index = self.buttonGroup.checkedId()
+        if index < 0:
+            QtWidgets.QMessageBox.information(
+                self,
+                "info",
+                "not choose transform type yet"
+            )
             return
-        _type = popup_choose.choosed_item
+        type = TransformType(index)
         # 选择需要转换的文件
-        if _type is TransformType.IMG2PDF:
+        if type is TransformType.IMG2PDF:
             file_dialog = QtWidgets.QFileDialog(self)
             file_dialog.setWindowTitle('选择一个或多个包含图片的目录')
-            file_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+            file_dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
             file_dialog.setOption(
-                QtWidgets.QFileDialog.DontUseNativeDialog,
+                QtWidgets.QFileDialog.Option.DontUseNativeDialog,
                 True
             )
             for view in file_dialog.findChildren(QtWidgets.QListView) + \
                 file_dialog.findChildren(QtWidgets.QTreeView):
                 if isinstance(view.model(), QtWidgets.QFileSystemModel):
                     view.setSelectionMode(
-                        QtWidgets.QAbstractItemView.ExtendedSelection
+                        QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
                     )
-            if file_dialog.exec_():
-                img_suffixs = {'.png', '.jpg', '.bmp'}
+            if file_dialog.exec():
                 files = file_dialog.selectedFiles()
-                tasks = (
-                    (
-                        file for file in Path(_dir).iterdir()
-                        if file.suffix in img_suffixs
-                    )
-                    for _dir in files
-                )
             else:
                 return
         else:
-            if _type is TransformType.PDF2IMG or \
-                _type is TransformType.PDF2DOCX:
+            if type is TransformType.PDF2IMG or \
+                type is TransformType.PDF2DOCX:
                 _filter = 'PDF file (*.pdf)'
             # elif _type is TransformType.IMG2PDF:
             #     _filter = 'image file (*.jpg,*.png,*.bmp)'
@@ -216,33 +177,15 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
                 str(Path.cwd()),
                 filter=_filter
             )
+            _ = fts
             if not files:
                 return
-            tasks = files
         dest_path = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             '选择保存目录'
         )
         if dest_path:
-            self._transformer.register(tasks, dest_path, _type)
-            type_name = _type.name.title()
-            self.task_listwidget.addItems([
-                type_name + ': ' + file
-                for file in files
-            ])
-
-    @to_sync
-    async def _begin_transform(self) -> None:
-        """开始进行转换。"""
-
-        self.statusbar.showMessage('begin to transform', 1000)
-        task = self._transformer.run()
-        if task is not None:
-            try:
-                await task
-            except asyncio.CancelledError:
-                self.task_listwidget.clear()
-                QtWidgets.QMessageBox.information(self, 'info', '转换完成')
+            self._transformer(files, dest_path, type)
 
     def run(self) -> None:
         """启动 GUI 界面。"""
@@ -251,11 +194,16 @@ class App(ui_main.Ui_MainWindow, QtWidgets.QMainWindow):
             fut = self._loop.create_future()
             self._qt_app.aboutToQuit.connect(
                 lambda: (
-                    self._recognizer.exit(),
+                    self.deinit(),
                     fut.set_result(0),
                 )
             )
             self.show()
             await fut
-        with self._loop:
-            self._loop.run_until_complete(_run())
+        self._loop.run_until_complete(_run())
+
+
+def run() -> None:
+    """ run the application."""
+
+    App().run()

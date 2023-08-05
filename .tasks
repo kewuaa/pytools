@@ -1,0 +1,14 @@
+[+]
+uic=<root>/.venv/Scripts/pyside6-uic
+
+[project-run]
+command:python=$(+pyenv:python) -m pytools
+cwd=<root>/src
+
+[edit-ui]
+command=<root>/.venv/Scripts/pyside6-designer ./src/pytools/ui/main.ui
+cwd=<root>
+
+[gen-ui]
+command=$(+uic) -o ./src/pytools/ui/main_ui.py ./src/pytools/ui/main.ui
+cwd=<root>

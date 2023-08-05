@@ -21,7 +21,7 @@ class Transformer:
     def __init__(
         self,
         *,
-        loop: Optional[asyncio.base_events.BaseEventLoop] = None
+        loop: Optional[asyncio.AbstractEventLoop] = None
     ) -> None:
         """初始化。
 
@@ -30,7 +30,7 @@ class Transformer:
 
         self._loop = loop if loop is not None else asyncio.get_event_loop()
 
-    def __call__(
+    async def __call__(
         self,
         files: Iterable[AnyPath],
         dest_path: AnyPath,
@@ -45,13 +45,13 @@ class Transformer:
 
         if type is TransformType.PDF2IMG:
             for file in files:
-                self._loop.create_task(pdf2img(file, dest_path, loop=self._loop))
+                await pdf2img(file, dest_path, loop=self._loop)
         elif type is TransformType.PDF2DOCX:
             for file in files:
-                self._loop.create_task(pdf2docx(file, dest_path, loop=self._loop))
+                await pdf2docx(file, dest_path, loop=self._loop)
         elif type is TransformType.IMG2PDF:
             for imgs_dir in files:
-                self._loop.create_task(img2pdf(imgs_dir, dest_path, loop=self._loop))
+                await img2pdf(imgs_dir, dest_path, loop=self._loop)
         elif type is TransformType.DOCX2PDF:
             for file in files:
-                self._loop.create_task(docx2pdf(file, dest_path, loop=self._loop))
+                await docx2pdf(file, dest_path, loop=self._loop)

@@ -1,7 +1,7 @@
 import asyncio
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 import aiofiles
 import fitz
@@ -33,7 +33,7 @@ class Converter(_Converter):
 async def pdf2img(
     pdf_file: AnyPath,
     dest_path: AnyPath,
-    *, loop: Optional[asyncio.base_events.BaseEventLoop] = None,
+    *, loop: Optional[asyncio.AbstractEventLoop] = None,
     dpi: Optional[int] = None,
 ) -> None:
     """实现 PDF 到 图片的转换
@@ -76,7 +76,7 @@ async def pdf2img(
 async def pdf2docx(
     pdf_file: AnyPath,
     dest_path: AnyPath,
-    *, loop: Optional[asyncio.base_events.BaseEventLoop] = None,
+    *, loop: Optional[asyncio.AbstractEventLoop] = None,
     password: Optional[str] = None,
     start: int = 0,
     end: Optional[int] = None,
@@ -105,7 +105,7 @@ async def img2pdf(
     imgs_dir: AnyPath,
     dest_path: AnyPath,
     *,
-    loop: Optional[asyncio.base_events.BaseEventLoop] = None,
+    loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> None:
     """实现图片到 PDF 的转换
 
@@ -150,7 +150,7 @@ async def img2pdf(
 async def docx2pdf(
     docx_file: AnyPath,
     dest_path: AnyPath,
-    *, loop: Optional[asyncio.base_events.BaseEventLoop] = None
+    *, loop: Optional[asyncio.AbstractEventLoop] = None
 ) -> None:
     """实现 Word 到 PDF 的转换
 

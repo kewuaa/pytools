@@ -12,7 +12,6 @@ from qasync import QEventLoop, asyncClose, asyncSlot
 
 from .OCR import Recognizer
 from .transform import Transformer, TransformType
-from .types import AnyPath
 from .ui.main_ui import Ui_MainWindow
 
 
@@ -123,14 +122,6 @@ class App(Ui_MainWindow, QtWidgets.QMainWindow):
             for text in result.values():
                 self.result_textbrowser.setText(text)
 
-    def _transform(self, *files: AnyPath, type: TransformType):
-        dest_path = QtWidgets.QFileDialog.getExistingDirectory(
-            self,
-            '选择保存目录'
-        )
-        if dest_path:
-            self._transformer(files, dest_path, type)
-
     @Slot()
     def on_transform_button_clicked(self) -> None:
         """注册转换任务。"""
@@ -185,7 +176,11 @@ class App(Ui_MainWindow, QtWidgets.QMainWindow):
             '选择保存目录'
         )
         if dest_path:
-            self._transformer(files, dest_path, type)
+            self._loop.create_task(self._transformer(files, dest_path, type)) \
+                .add_done_callback(
+                    lambda fut: QtWidgets.QMessageBox.information(self, "info", "done")
+                    if fut.exception() is None else None
+                )
 
     def run(self) -> None:
         """启动 GUI 界面。"""

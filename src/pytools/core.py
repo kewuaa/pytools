@@ -8,22 +8,23 @@ import pyperclip
 from PIL import Image, ImageGrab
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
-from qasync import QEventLoop, asyncClose, asyncSlot
+from qasync import (
+    DefaultQEventLoopPolicy,
+    _set_event_loop_policy,
+    asyncClose,
+    asyncSlot,
+)
 
 from .OCR import Recognizer
 from .transform import Transformer, TransformType
 from .ui.main_ui import Ui_MainWindow
 
 
-class App(Ui_MainWindow, QtWidgets.QMainWindow):
+class Pytools(Ui_MainWindow, QtWidgets.QMainWindow):
     """ GUI."""
 
     def __init__(self) -> None:
-        # init qt application and event loop
-        self._qt_app = QtWidgets.QApplication(sys.argv)
-        self._qt_app.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
-        self._loop = QEventLoop(app=self._qt_app)
-        asyncio.set_event_loop(self._loop)
+        self._loop = asyncio.get_event_loop()
 
         # init transformer
         self._transformer = Transformer(loop=self._loop)
@@ -182,23 +183,32 @@ class App(Ui_MainWindow, QtWidgets.QMainWindow):
                     if fut.exception() is None else None
                 )
 
-    def run(self) -> None:
+    async def show(self) -> None:
         """启动 GUI 界面。"""
 
-        async def _run() -> None:
-            fut = self._loop.create_future()
-            self._qt_app.aboutToQuit.connect(
+        fut = self._loop.create_future()
+        qt_app = QtWidgets.QApplication.instance()
+        if qt_app is not None:
+            qt_app.aboutToQuit.connect(
                 lambda: (
                     self.deinit(),
-                    fut.set_result(0),
+                    fut.set_result(0) if not fut.done() else None,
                 )
             )
-            self.show()
-            await fut
-        self._loop.run_until_complete(_run())
+        else:
+            raise RuntimeError("no QApplication instance")
+        super().show()
+        await fut
+
+    @classmethod
+    async def run(cls) -> None:
+        await cls().show()
 
 
 def run() -> None:
     """ run the application."""
 
-    App().run()
+    with _set_event_loop_policy(DefaultQEventLoopPolicy()):
+        app = QtWidgets.QApplication(sys.argv)
+        app.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
+        asyncio.run(Pytools.run())

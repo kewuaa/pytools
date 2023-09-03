@@ -19,7 +19,7 @@ class Recognizer:
 
     def __init__(
         self,
-        loop: Optional[asyncio.base_events.BaseEventLoop] = None
+        loop: Optional[asyncio.AbstractEventLoop] = None
     ) -> None:
         self._loop = loop or asyncio.get_event_loop()
         self._sess = ClientSession(loop=self._loop)

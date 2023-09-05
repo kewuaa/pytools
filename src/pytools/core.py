@@ -8,9 +8,9 @@ import pyperclip
 from PIL import Image, ImageGrab
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
+from PySide6.QtGui import QCloseEvent
 from qasync import (
-    DefaultQEventLoopPolicy,
-    _set_event_loop_policy,
+    QEventLoop,
     asyncClose,
     asyncSlot,
 )
@@ -34,6 +34,10 @@ class Pytools(Ui_MainWindow, QtWidgets.QMainWindow):
         # init UI related
         super().__init__()
         self._loop.call_soon(self.setupUi)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self.deinit()
+        return super().closeEvent(event)
 
     def deinit(self) -> None:
         asyncClose(self._recognizer.exit)()
@@ -183,32 +187,15 @@ class Pytools(Ui_MainWindow, QtWidgets.QMainWindow):
                     if fut.exception() is None else None
                 )
 
-    async def show(self) -> None:
-        """启动 GUI 界面。"""
-
-        fut = self._loop.create_future()
-        qt_app = QtWidgets.QApplication.instance()
-        if qt_app is not None:
-            qt_app.aboutToQuit.connect(
-                lambda: (
-                    self.deinit(),
-                    fut.set_result(0) if not fut.done() else None,
-                )
-            )
-        else:
-            raise RuntimeError("no QApplication instance")
-        super().show()
-        await fut
-
-    @classmethod
-    async def run(cls) -> None:
-        await cls().show()
-
 
 def run() -> None:
     """ run the application."""
 
-    with _set_event_loop_policy(DefaultQEventLoopPolicy()):
-        app = QtWidgets.QApplication(sys.argv)
-        app.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
-        asyncio.run(Pytools.run())
+    app = QtWidgets.QApplication(sys.argv)
+    app.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
+    pytools = Pytools()
+    pytools.show()
+    with loop:
+        loop.run_forever()

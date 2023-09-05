@@ -61,7 +61,7 @@ async def pdf2img(
         buf = await f.read()
     pdf = fitz.Document(stream=buf, filetype='pdf')
     try:
-        await aos.makedirs(dest_path, exist_ok=True)
+        await aos.makedirs(_dest_path, exist_ok=True)
         page_num = pdf.page_count
         tasks = [
             _loop.create_task(convert_page(index)) for index in range(page_num)
